@@ -30,13 +30,15 @@ export async function onRequest(context) {
     return new Response(JSON.stringify(tokens), { status: 400 });
   }
 
-  // 2. Update the user's role connection metadata
+  // 2. Update the user's role connection metadata (THIS is what makes it appear)
   const updateResponse = await fetch(`https://discord.com/api/v10/users/@me/applications/${CLIENT_ID}/role-connection`, {
     method: "PUT",
     body: JSON.stringify({
-      platform_name: "@fourhrt",
-      platform_username: "verified",
-      metadata: {},
+      platform_name: "fourhrts", // The name that shows next to the icon
+      platform_username: "@fourhrt", // Your site username/handle
+      metadata: {
+        verified: 1 // This MUST match the metadata key we registered
+      },
     }),
     headers: {
       "Authorization": `Bearer ${tokens.access_token}`,
