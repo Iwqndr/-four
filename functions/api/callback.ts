@@ -3,9 +3,10 @@ export async function onRequest(context) {
   const code = url.searchParams.get("code");
   
   if (!code) {
-    return new Response("Missing code", { status: 400 });
+    return new Response("No code provided", { status: 400 });
   }
 
+  // Use Environment Variables for security
   const CLIENT_ID = context.env.DISCORD_CLIENT_ID;
   const CLIENT_SECRET = context.env.DISCORD_CLIENT_SECRET;
   const REDIRECT_URI = "https://fourhrts.pages.dev/api/callback";
@@ -30,14 +31,15 @@ export async function onRequest(context) {
     return new Response(JSON.stringify(tokens), { status: 400 });
   }
 
-  // 2. Update the user's role connection metadata (THIS is what makes it appear)
+  // 2. "Push" the metadata (THIS is what makes the icon appear)
+  // Matches your exact tutorial logic
   const updateResponse = await fetch(`https://discord.com/api/v10/users/@me/applications/${CLIENT_ID}/role-connection`, {
     method: "PUT",
     body: JSON.stringify({
       platform_name: "fourhrts", // The name that shows next to the icon
-      platform_username: "@fourhrt", // Your site username/handle
+      platform_username: "Verified User", // Subtext
       metadata: {
-        verified: 1 // This MUST match the metadata key we registered
+        verified: 1 // Match the metadata key we registered
       },
     }),
     headers: {
@@ -48,8 +50,8 @@ export async function onRequest(context) {
 
   if (!updateResponse.ok) {
     const errorBody = await updateResponse.text();
-    return new Response(`Failed to update connection: ${errorBody}`, { status: 500 });
+    return new Response(`Failed to update metadata: ${errorBody}`, { status: 500 });
   }
 
-  return new Response("Successfully linked! You can now close this tab. Your custom name should now appear in your Discord Connections list.");
+  return new Response("Success! Refresh Discord and check your Connections.");
 }
