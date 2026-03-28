@@ -5,7 +5,7 @@ export default function App() {
   useEffect(() => {
     const timer = setTimeout(() => {
       window.location.href = 'https://makka.lol/four';
-    }, 2000);
+    }, 1000);
 
     return () => clearTimeout(timer);
   }, []);
@@ -15,19 +15,19 @@ export default function App() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
         className="flex flex-col items-center gap-8"
       >
         <div className="relative">
           {/* Animated rings */}
           <motion.div
             animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.1, 0.3] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
             className="absolute inset-0 rounded-full border border-zinc-500 w-32 h-32 -m-8"
           />
           <motion.div
             animate={{ scale: [1, 1.5, 1], opacity: [0.2, 0, 0.2] }}
-            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
             className="absolute inset-0 rounded-full border border-zinc-700 w-32 h-32 -m-8"
           />
           
@@ -38,7 +38,7 @@ export default function App() {
           <motion.h1 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
+            transition={{ delay: 0.1 }}
             className="text-2xl font-light tracking-widest uppercase"
           >
             Taking you to <span className="font-medium text-zinc-400">/four</span>
@@ -47,7 +47,7 @@ export default function App() {
           <motion.div 
             initial={{ width: 0 }}
             animate={{ width: "100%" }}
-            transition={{ duration: 2, ease: "easeInOut" }}
+            transition={{ duration: 1, ease: "easeInOut" }}
             className="h-px bg-gradient-to-r from-transparent via-zinc-500 to-transparent"
           />
           
