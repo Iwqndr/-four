@@ -14,9 +14,9 @@ export default function App() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLink, setEditingLink] = useState<Link | null>(null);
-  const [customSecret, setCustomSecret] = useState('');
+  const [adminToken, setAdminToken] = useState<string>(localStorage.getItem('admin_token') || '');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [formData, setFormData] = useState({ name: '', url: '' });
-  const [myIp, setMyIp] = useState<string | null>(null);
 
   // Fetch links from API
   const fetchLinks = useCallback(async () => {
@@ -31,20 +31,33 @@ export default function App() {
     }
   }, []);
 
-  // Fetch public IP for info
-  const fetchIp = useCallback(async () => {
+  // Verify and persist admin status
+  const checkAuthStatus = useCallback(async (tokenToVerify?: string) => {
+    const token = tokenToVerify || adminToken;
+    if (!token) return;
+
     try {
-      const res = await fetch('/api/ip');
-      const ip = await res.text();
-      setMyIp(ip);
+      const res = await fetch('/api/admin/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token })
+      });
+      const { valid } = await res.json();
+      if (valid) {
+        setIsAuthenticated(true);
+        localStorage.setItem('admin_token', token);
+      } else {
+        setIsAuthenticated(false);
+        localStorage.removeItem('admin_token');
+      }
     } catch (err) {
-      console.error('Failed to fetch IP:', err);
+      console.error('Auth check failed:', err);
     }
-  }, []);
+  }, [adminToken]);
 
   useEffect(() => {
     fetchLinks();
-    fetchIp();
+    checkAuthStatus();
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key.toLowerCase() === 'p' && !isModalOpen) {
@@ -53,7 +66,14 @@ export default function App() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [fetchLinks, fetchIp, isModalOpen]);
+  }, [fetchLinks, checkAuthStatus, isModalOpen]);
+
+  // When panel opens, if not authed, generate a new token in Supabase
+  useEffect(() => {
+    if (isPanelOpen && !isAuthenticated) {
+      fetch('/api/admin/generate', { method: 'POST' });
+    }
+  }, [isPanelOpen, isAuthenticated]);
 
   // Save changes to API
   const saveLinks = async (updatedLinks: Link[]) => {
@@ -62,7 +82,7 @@ export default function App() {
       body: JSON.stringify(updatedLinks),
       headers: {
         'Content-Type': 'application/json',
-        'X-Admin-Secret': customSecret
+        'X-Admin-Token': adminToken
       }
     });
     
@@ -72,7 +92,8 @@ export default function App() {
       setEditingLink(null);
       setFormData({ name: '', url: '' });
     } else if (res.status === 401) {
-      alert('Unauthorized. Ensure your IP matches or enter the secret in the panel.');
+      setIsAuthenticated(false);
+      alert('Session expired or unauthorized. Please verify your new token.');
     }
   };
 
@@ -90,6 +111,28 @@ export default function App() {
     if (confirm('Delete this site?')) {
       const updated = links.filter(l => l.id !== id);
       saveLinks(updated);
+    }
+  };
+
+  // Masked code for the header
+  const maskedCode = adminToken.length > 6 
+    ? `${adminToken.substring(0, 6)}...` 
+    : adminToken;
+
+  // Verify token
+  const handleVerify = async () => {
+    const res = await fetch('/api/admin/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: adminToken })
+    });
+    
+    const { valid } = await res.json();
+    if (valid) {
+      setIsAuthenticated(true);
+      localStorage.setItem('admin_token', adminToken);
+    } else {
+      alert('Invalid Token. Check your Supabase table for the new tk- code.');
     }
   };
 
@@ -188,79 +231,106 @@ export default function App() {
               <div className="flex items-center justify-between mb-12">
                 <div>
                   <h2 className="text-xl font-light tracking-widest uppercase">Admin Panel</h2>
-                  <p className="text-[10px] text-zinc-500 mt-1 uppercase tracking-tighter">Your IP: {myIp || 'Detecting...'}</p>
+                  {isAuthenticated ? (
+                    <p className="text-[10px] text-zinc-400 mt-1 uppercase tracking-tighter">Authenticated with code: <span className="text-zinc-100 font-mono">{maskedCode}</span></p>
+                   ) : (
+                    <p className="text-[10px] text-zinc-500 mt-1 uppercase tracking-tighter tracking-widest">Verification Required</p>
+                   )}
                 </div>
                 <button onClick={() => setIsPanelOpen(false)} className="p-2 hover:bg-zinc-900 rounded-full transition-colors text-zinc-500 hover:text-white">
                   <X />
                 </button>
               </div>
 
-              <div className="mb-8 space-y-4">
-                <p className="text-[10px] text-zinc-500 uppercase tracking-widest">Authentication</p>
-                <input 
-                  type="password" 
-                  placeholder="Admin Secret" 
-                  value={customSecret}
-                  onChange={(e) => setCustomSecret(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-sm focus:outline-none focus:border-zinc-600 transition-colors"
-                />
-              </div>
-
-              <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xs text-zinc-500 uppercase tracking-widest">Manage Sites</h3>
-                  {links.length > 0 && (
-                    <button 
-                      onClick={() => { setEditingLink(null); setIsModalOpen(true); }}
-                      className="p-2 bg-zinc-100 text-zinc-950 rounded-lg hover:bg-white transition-colors"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-
-                <div className="space-y-3">
-                  {links.map(link => (
-                    <div key={link.id} className="group flex items-center justify-between p-4 bg-zinc-900/30 border border-zinc-900 rounded-xl hover:border-zinc-800 transition-colors">
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium">{link.name}</span>
-                        <span className="text-[10px] text-zinc-500 truncate max-w-[150px]">{link.url}</span>
-                      </div>
-                      <div className="flex items-center gap-1 opacity-100 group-hover:opacity-100 md:opacity-0 transition-opacity">
+              {!isAuthenticated ? (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex-1 flex flex-col justify-center gap-6"
+                >
+                  <div className="space-y-4">
+                    <p className="text-[10px] text-zinc-500 uppercase tracking-widest text-center">New Token Generated</p>
+                    <input 
+                      type="password" 
+                      autoFocus
+                      placeholder="tk-••••••••" 
+                      value={adminToken}
+                      onChange={(e) => setAdminToken(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleVerify()}
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl p-4 text-center text-lg focus:outline-none focus:border-zinc-600 transition-colors tracking-widest"
+                    />
+                    <p className="text-[9px] text-zinc-600 text-center uppercase">Find your token in the Supabase Table Editor</p>
+                  </div>
+                  <button 
+                    onClick={handleVerify}
+                    className="w-full py-4 bg-zinc-100 text-zinc-950 rounded-2xl text-xs uppercase tracking-widest font-medium active:scale-95 transition-transform"
+                  >
+                    Verify Token
+                  </button>
+                </motion.div>
+              ) : (
+                <motion.div 
+                   initial={{ opacity: 0 }}
+                   animate={{ opacity: 1 }}
+                   className="flex-1 flex flex-col"
+                >
+                  <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-xs text-zinc-500 uppercase tracking-widest">Manage Sites</h3>
+                      {links.length > 0 && (
                         <button 
-                          onClick={() => { setEditingLink(link); setFormData({ name: link.name, url: link.url }); setIsModalOpen(true); }}
-                          className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-all"
+                          onClick={() => { setEditingLink(null); setIsModalOpen(true); }}
+                          className="p-2 bg-zinc-100 text-zinc-950 rounded-lg hover:bg-white transition-colors"
                         >
-                          <Pencil className="w-4 h-4" />
+                          <Plus className="w-4 h-4" />
                         </button>
-                        <button 
-                          onClick={() => handleDelete(link.id)}
-                          className="p-2 text-red-500/50 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
+                      )}
                     </div>
-                  ))}
 
-                  {links.length === 0 && (
-                    <button 
-                      onClick={() => { setEditingLink(null); setIsModalOpen(true); }}
-                      className="w-full py-12 border-2 border-dashed border-zinc-900 rounded-2xl flex flex-col items-center gap-3 hover:border-zinc-800 hover:bg-zinc-900/20 transition-all text-zinc-500 hover:text-zinc-300"
-                    >
-                      <Plus />
-                      <span className="text-xs uppercase tracking-widest font-light">Add First Site</span>
-                    </button>
-                  )}
-                </div>
-              </div>
+                    <div className="space-y-3">
+                      {links.map(link => (
+                        <div key={link.id} className="group flex items-center justify-between p-4 bg-zinc-900/30 border border-zinc-900 rounded-xl hover:border-zinc-800 transition-colors">
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium">{link.name}</span>
+                            <span className="text-[10px] text-zinc-500 truncate max-w-[150px]">{link.url}</span>
+                          </div>
+                          <div className="flex items-center gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-all">
+                            <button 
+                              onClick={() => { setEditingLink(link); setFormData({ name: link.name, url: link.url }); setIsModalOpen(true); }}
+                              className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-all"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            <button 
+                              onClick={() => handleDelete(link.id)}
+                              className="p-2 text-red-500/50 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
 
-              <button 
-                onClick={() => { setLinks([]); setIsPanelOpen(false); }}
-                className="mt-8 flex items-center justify-center gap-2 p-4 text-xs text-zinc-600 hover:text-red-400 transition-colors uppercase tracking-widest"
-              >
-                <LogOut className="w-4 h-4" /> Exit Session
-              </button>
+                      {links.length === 0 && (
+                        <button 
+                          onClick={() => { setEditingLink(null); setIsModalOpen(true); }}
+                          className="w-full py-12 border-2 border-dashed border-zinc-900 rounded-2xl flex flex-col items-center gap-3 hover:border-zinc-800 hover:bg-zinc-900/20 transition-all text-zinc-500 hover:text-zinc-300"
+                        >
+                          <Plus />
+                          <span className="text-xs uppercase tracking-widest font-light">Add First Site</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <button 
+                    onClick={() => { localStorage.removeItem('admin_token'); setAdminToken(''); setIsAuthenticated(false); setIsPanelOpen(false); }}
+                    className="mt-8 flex items-center justify-center gap-2 p-4 text-xs text-zinc-600 hover:text-red-400 transition-colors uppercase tracking-widest"
+                  >
+                    <LogOut className="w-4 h-4" /> Exit Session
+                  </button>
+                </motion.div>
+              )}
             </motion.div>
           </>
         )}

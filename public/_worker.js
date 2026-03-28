@@ -3,21 +3,51 @@ export default {
     const url = new URL(request.url);
 
     // --- AUTHENTICATION HELPERS ---
-    const getAdminStatus = () => {
-      const clientIp = request.headers.get("CF-Connecting-IP");
-      const adminSecret = request.headers.get("X-Admin-Secret");
-      // Allowed IPs: User's provided 10.0.0.55/124 (for local dev) + Public IP (future)
-      const allowedIps = ["10.0.0.55", "10.0.0.124"]; 
-      // Fallback secret if IP changes
-      const masterSecret = env.ADMIN_SECRET || "admin123"; 
+    const verifyToken = async (token) => {
+      if (!token) return false;
+      const SUPABASE_URL = env.SUPABASE_URL;
+      const SUPABASE_KEY = env.SUPABASE_ANON_KEY;
 
-      return allowedIps.includes(clientIp) || adminSecret === masterSecret;
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/admin_session?token=eq.${token}&id=eq.1`, {
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": `Bearer ${SUPABASE_KEY}`
+        }
+      });
+      const data = await res.json();
+      return data.length > 0;
     };
 
-    // --- 1. ADMIN IP CHECKER ---
-    if (url.pathname === "/api/ip") {
-      return new Response(request.headers.get("CF-Connecting-IP"), {
-        headers: { "Content-Type": "text/plain" }
+    const generateRandomToken = () => {
+      const array = new Uint8Array(24); // 48 hex chars
+      crypto.getRandomValues(array);
+      const hex = Array.from(array).map(b => b.toString(16).padStart(2, "0")).join("");
+      return `tk-${hex.substring(0, 16).toUpperCase()}`;
+    };
+
+    // --- 1. ADMIN TOKEN GEN/VERIFY ---
+    if (url.pathname === "/api/admin/generate") {
+      const newToken = generateRandomToken();
+      const SUPABASE_URL = env.SUPABASE_URL;
+      const SUPABASE_KEY = env.SUPABASE_ANON_KEY;
+
+      await fetch(`${SUPABASE_URL}/rest/v1/admin_session?id=eq.1`, {
+        method: "PATCH",
+        body: JSON.stringify({ token: newToken, updated_at: new Date().toISOString() }),
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": `Bearer ${SUPABASE_KEY}`,
+          "Content-Type": "application/json"
+        }
+      });
+      return new Response("Generated");
+    }
+
+    if (url.pathname === "/api/admin/verify") {
+      const body = await request.json();
+      const isValid = await verifyToken(body.token);
+      return new Response(JSON.stringify({ valid: isValid }), {
+        headers: { "Content-Type": "application/json" }
       });
     }
 
@@ -44,14 +74,14 @@ export default {
       }
 
       if (request.method === "POST") {
-        if (!getAdminStatus()) {
+        const adminToken = request.headers.get("X-Admin-Token");
+        if (!(await verifyToken(adminToken))) {
           return new Response("Unauthorized", { status: 401 });
         }
 
         const body = await request.json(); // Array of links
-        
         try {
-          // 1. Delete all current links to sync the full list (KV style)
+          // 1. Delete all current links
           await fetch(`${SUPABASE_URL}/rest/v1/links?id=neq.00000000-0000-0000-0000-000000000000`, {
             method: "DELETE",
             headers: {
@@ -63,7 +93,7 @@ export default {
           // 2. Insert the new links
           if (body.length > 0) {
             const insertData = body.map((l) => ({
-              id: l.id.length > 30 ? l.id : undefined, // Ensure valid UUID or let Supabase generate
+              id: l.id.length > 30 ? l.id : undefined,
               name: l.name,
               url: l.url
             }));
