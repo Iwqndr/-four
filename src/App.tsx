@@ -85,7 +85,7 @@ export default function App() {
         'X-Admin-Token': adminToken
       }
     });
-    
+
     if (res.ok) {
       setLinks(updatedLinks);
       setIsModalOpen(false);
@@ -115,8 +115,8 @@ export default function App() {
   };
 
   // Masked code for the header
-  const maskedCode = adminToken.length > 6 
-    ? `${adminToken.substring(0, 6)}...` 
+  const maskedCode = adminToken.length > 6
+    ? `${adminToken.substring(0, 6)}...`
     : adminToken;
 
   // Verify token
@@ -126,7 +126,7 @@ export default function App() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token: adminToken })
     });
-    
+
     const { valid } = await res.json();
     if (valid) {
       setIsAuthenticated(true);
@@ -147,7 +147,7 @@ export default function App() {
       </div>
 
       <main className="relative max-w-lg mx-auto px-6 py-20 flex flex-col items-center min-h-screen">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-16"
@@ -156,12 +156,12 @@ export default function App() {
             <Globe className="w-8 h-8 text-zinc-400 group-hover:text-zinc-100 transition-colors" />
           </div>
           <h1 className="text-2xl font-light tracking-[0.2em] uppercase">Connect</h1>
-          <p className="text-xs text-zinc-500 tracking-widest mt-2 uppercase">Follow the path</p>
+          <p className="text-xs text-zinc-500 tracking-widest mt-2 lowercase">i love you guys ❤️‍🩹</p>
         </motion.div>
 
         {isLoading ? (
           <div className="flex flex-col items-center gap-4">
-             <div className="w-8 h-8 border-2 border-zinc-800 border-t-zinc-500 rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-zinc-800 border-t-zinc-500 rounded-full animate-spin" />
           </div>
         ) : (
           <div className="w-full space-y-4">
@@ -188,8 +188,8 @@ export default function App() {
             </AnimatePresence>
 
             {links.length === 0 && (
-              <motion.div 
-                initial={{ opacity: 0 }} 
+              <motion.div
+                initial={{ opacity: 0 }}
                 animate={{ opacity: 0.5 }}
                 className="text-center py-20 border-2 border-dashed border-zinc-900 rounded-3xl"
               >
@@ -202,7 +202,7 @@ export default function App() {
 
       {/* Admin Floating Trigger (Mobile) */}
       <div className="md:hidden fixed bottom-8 right-8 z-40">
-        <button 
+        <button
           onClick={() => setIsPanelOpen(prev => !prev)}
           className="w-14 h-14 rounded-full bg-zinc-100 text-zinc-950 flex items-center justify-center shadow-2xl active:scale-95 transition-transform"
         >
@@ -214,14 +214,14 @@ export default function App() {
       <AnimatePresence>
         {isPanelOpen && (
           <>
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsPanelOpen(false)}
               className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
             />
-            <motion.div 
+            <motion.div
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
@@ -233,9 +233,9 @@ export default function App() {
                   <h2 className="text-xl font-light tracking-widest uppercase">Admin Panel</h2>
                   {isAuthenticated ? (
                     <p className="text-[10px] text-zinc-400 mt-1 uppercase tracking-tighter">Authenticated with code: <span className="text-zinc-100 font-mono">{maskedCode}</span></p>
-                   ) : (
+                  ) : (
                     <p className="text-[10px] text-zinc-500 mt-1 uppercase tracking-tighter tracking-widest">Verification Required</p>
-                   )}
+                  )}
                 </div>
                 <button onClick={() => setIsPanelOpen(false)} className="p-2 hover:bg-zinc-900 rounded-full transition-colors text-zinc-500 hover:text-white">
                   <X />
@@ -243,17 +243,17 @@ export default function App() {
               </div>
 
               {!isAuthenticated ? (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   className="flex-1 flex flex-col justify-center gap-6"
                 >
                   <div className="space-y-4">
                     <p className="text-[10px] text-zinc-500 uppercase tracking-widest text-center">New Token Generated</p>
-                    <input 
-                      type="password" 
+                    <input
+                      type="password"
                       autoFocus
-                      placeholder="tk-••••••••" 
+                      placeholder="tk-••••••••"
                       value={adminToken}
                       onChange={(e) => setAdminToken(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleVerify()}
@@ -261,7 +261,7 @@ export default function App() {
                     />
                     <p className="text-[9px] text-zinc-600 text-center uppercase">Find your token in the Supabase Table Editor</p>
                   </div>
-                  <button 
+                  <button
                     onClick={handleVerify}
                     className="w-full py-4 bg-zinc-100 text-zinc-950 rounded-2xl text-xs uppercase tracking-widest font-medium active:scale-95 transition-transform"
                   >
@@ -269,16 +269,16 @@ export default function App() {
                   </button>
                 </motion.div>
               ) : (
-                <motion.div 
-                   initial={{ opacity: 0 }}
-                   animate={{ opacity: 1 }}
-                   className="flex-1 flex flex-col"
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="flex-1 flex flex-col"
                 >
                   <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
                     <div className="flex items-center justify-between mb-6">
                       <h3 className="text-xs text-zinc-500 uppercase tracking-widest">Manage Sites</h3>
                       {links.length > 0 && (
-                        <button 
+                        <button
                           onClick={() => { setEditingLink(null); setIsModalOpen(true); }}
                           className="p-2 bg-zinc-100 text-zinc-950 rounded-lg hover:bg-white transition-colors"
                         >
@@ -295,13 +295,13 @@ export default function App() {
                             <span className="text-[10px] text-zinc-500 truncate max-w-[150px]">{link.url}</span>
                           </div>
                           <div className="flex items-center gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-all">
-                            <button 
+                            <button
                               onClick={() => { setEditingLink(link); setFormData({ name: link.name, url: link.url }); setIsModalOpen(true); }}
                               className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-all"
                             >
                               <Pencil className="w-4 h-4" />
                             </button>
-                            <button 
+                            <button
                               onClick={() => handleDelete(link.id)}
                               className="p-2 text-red-500/50 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
                             >
@@ -312,7 +312,7 @@ export default function App() {
                       ))}
 
                       {links.length === 0 && (
-                        <button 
+                        <button
                           onClick={() => { setEditingLink(null); setIsModalOpen(true); }}
                           className="w-full py-12 border-2 border-dashed border-zinc-900 rounded-2xl flex flex-col items-center gap-3 hover:border-zinc-800 hover:bg-zinc-900/20 transition-all text-zinc-500 hover:text-zinc-300"
                         >
@@ -323,7 +323,7 @@ export default function App() {
                     </div>
                   </div>
 
-                  <button 
+                  <button
                     onClick={() => { localStorage.removeItem('admin_token'); setAdminToken(''); setIsAuthenticated(false); setIsPanelOpen(false); }}
                     className="mt-8 flex items-center justify-center gap-2 p-4 text-xs text-zinc-600 hover:text-red-400 transition-colors uppercase tracking-widest"
                   >
@@ -340,18 +340,18 @@ export default function App() {
       <AnimatePresence>
         {isModalOpen && (
           <div className="fixed inset-0 z-[70] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
               className="w-full max-w-sm bg-zinc-900 border border-zinc-800 rounded-3xl p-8 shadow-2xl"
             >
               <h3 className="text-lg font-light tracking-widest uppercase mb-8">{editingLink ? 'Edit Link' : 'Add Link'}</h3>
-              
+
               <div className="space-y-6">
                 <div className="space-y-2">
                   <label className="text-[10px] text-zinc-500 uppercase tracking-widest ml-1">Site Name</label>
-                  <input 
+                  <input
                     autoFocus
                     value={formData.name}
                     onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
@@ -361,7 +361,7 @@ export default function App() {
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] text-zinc-500 uppercase tracking-widest ml-1">Site Link</label>
-                  <input 
+                  <input
                     value={formData.url}
                     onChange={(e) => setFormData(prev => ({ ...prev, url: e.target.value }))}
                     className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-sm focus:outline-none focus:border-zinc-600 transition-colors font-mono"
@@ -374,13 +374,13 @@ export default function App() {
               </div>
 
               <div className="mt-10 flex items-center justify-end gap-6">
-                <button 
+                <button
                   onClick={() => setIsModalOpen(false)}
                   className="text-xs text-zinc-500 hover:text-white uppercase tracking-widest transition-colors font-light"
                 >
                   Cancel
                 </button>
-                <button 
+                <button
                   disabled={!isFormValid}
                   onClick={handleAddOrEdit}
                   className={`px-8 py-3 rounded-xl text-xs uppercase tracking-widest transition-all ${isFormValid ? 'bg-zinc-100 text-zinc-950 font-medium active:scale-95' : 'bg-zinc-800 text-zinc-600 cursor-not-allowed'}`}
