@@ -1,0 +1,5 @@
+{
+  "name": "Redirector to /four",
+  "description": "A simple website that smoothly redirects users to makka.lol/four with a loading animation.",
+  "requestFramePermissions": []
+}
