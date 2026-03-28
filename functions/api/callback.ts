@@ -6,8 +6,8 @@ export async function onRequest(context) {
     return new Response("Missing code", { status: 400 });
   }
 
-  const CLIENT_ID = "1487396450634567762";
-  const CLIENT_SECRET = "puTLRxe5FzD5Q3RxSbCgYLJftjWTNlss";
+  const CLIENT_ID = context.env.DISCORD_CLIENT_ID;
+  const CLIENT_SECRET = context.env.DISCORD_CLIENT_SECRET;
   const REDIRECT_URI = "https://fourhrts.pages.dev/api/callback";
 
   // 1. Exchange the code for an access token
