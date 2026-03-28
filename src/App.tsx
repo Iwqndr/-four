@@ -23,9 +23,15 @@ export default function App() {
     try {
       const res = await fetch('/api/links');
       const data = await res.json();
-      setLinks(data);
+      if (Array.isArray(data)) {
+        setLinks(data);
+      } else {
+        console.error('API returned non-array data:', data);
+        setLinks([]);
+      }
     } catch (err) {
       console.error('Failed to fetch links:', err);
+      setLinks([]);
     } finally {
       setIsLoading(false);
     }
